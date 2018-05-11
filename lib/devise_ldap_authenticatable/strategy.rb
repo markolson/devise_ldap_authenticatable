@@ -31,6 +31,12 @@ module Devise
             return fail(:invalid) # Invalid credentials
           end
         end
+      rescue Net::LDAP::ConnectionRefusedError => e
+        DeviseLdapAuthenticatable::Logger.send("Could not connect to LDAP server; Falling back to DB")
+        # TODO - what else should we do here? It may not be that their LDAP/AD is down, but that 
+        # we got re-firewalled. It might do to have a healthcheck that, outside of this, pings
+        # their server and binds to it using our credentials.
+        return pass
       end
     end
   end
