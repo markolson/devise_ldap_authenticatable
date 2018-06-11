@@ -33,9 +33,21 @@ module Devise
         end
       rescue Net::LDAP::ConnectionRefusedError => e
         DeviseLdapAuthenticatable::Logger.send("Could not connect to LDAP server; Falling back to DB")
+        DeviseLdapAuthenticatable::Logger.send(e.exception)
         # TODO - what else should we do here? It may not be that their LDAP/AD is down, but that 
         # we got re-firewalled. It might do to have a healthcheck that, outside of this, pings
         # their server and binds to it using our credentials.
+        return pass
+      rescue DeviseLdapAuthenticatable::LdapException => else
+        DeviseLdapAuthenticatable::Logger.send("Could not authenticate (?) with LDAP server; Falling back to DB")
+        DeviseLdapAuthenticatable::Logger.send(e.exception)
+        # Comes up when the user/auth for admin is wrong.
+        return pass
+      rescue Net::LDAP::Error => e
+        DeviseLdapAuthenticatable::Logger.send("Could not connect to LDAP server; Falling back to DB")
+        DeviseLdapAuthenticatable::Logger.send(e.exception)
+        # Comes up when there's a bad hostname. Again, not sure what the actual rescue policy should
+        # be because this is fairly unresolvable.
         return pass
       end
     end
